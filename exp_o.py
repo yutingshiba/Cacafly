@@ -136,10 +136,14 @@ if __name__ == '__main__':
 #    print(sum(1 for label in classes if label > 0.6))
 #    print(sum(1 for label in classes if label > 0.7))
 #    print(sum(label for label in classes)/len(classes))
-#    with open(check_path(data.save_predict_path),'wb') as outfile:
-#        pickle.dump(classes, outfile)
 
     classes = classes.reshape(-1)
     prediction = classes.round().astype(int)
-    print(confusion_matrix(train_labels, prediction))
-    print(precision_recall_fscore_support(train_labels, prediction))
+    print(confusion_matrix(test_labels, prediction))
+    print(precision_recall_fscore_support(test_labels, prediction))
+    correctness = data.find_trues(test_labels, prediction)
+    accuracy = sum(correctness)/len(correctness)
+    print('accuracy =', accuracy)
+    with open(data.save_predict_path,'wb') as outfile:
+        pickle.dump(correctness, outfile)
+
