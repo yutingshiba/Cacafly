@@ -260,6 +260,14 @@ class DataManager:
                 else:
                     yield (inputs)
 
+    def find_trues(self, y_true, y_pred):
+#        result = np.zeros(len(y_true))
+#        for idx, pred in y_pred:
+#            if pred == y_true[idx]:
+#                result[idx]=1
+        result = abs(-1 + (y_true^y_pred))
+        return result
+
 #if __name__ == '__main__':
 #    data_manager = DataManager(sys.argv)
 #    print(data_manager.dicPar['topic_size'])
