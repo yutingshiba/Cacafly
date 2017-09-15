@@ -1,15 +1,3 @@
-#========================================================
-# Origin: exp_n.py
-# Change:
-# 1. change optimizer: adagram -> nadam
-# 2. yield for loop: batch_size -> samples_per_epoch
-# 3. add 'topic_size = 100' to config_o.ini
-# 4. change "# padding topic" section
-# 5. change dense layer in "build_model": Dense(1,sigmoid)
-# 5.1. remove: to_categorical(labels,2) in "batch_generator_train"
-# 6. add function: f1, import keras backend as K
-# 7. add function: check_path
-#========================================================
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -42,7 +30,7 @@ def debug(data):
 
 if __name__ == '__main__':
     # tenserflow setting
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     gpu_options = tf.GPUOptions(allow_growth=True)
     sess = tf.InteractiveSession(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=gpu_options))
 
@@ -52,6 +40,7 @@ if __name__ == '__main__':
     model = BuildModel(data.dicPar, data.vSize, data.word_emb, data.uSize)
     model.print_params()
     my_model = model.build()
+    sys.exit()
     print('Build model Elapse: ', time.time()-t)
 
     train_labels, train_r_aid, train_c_aid, train_c_user = data.load_h5py(data.train_path)
@@ -77,8 +66,10 @@ if __name__ == '__main__':
 
     # Fit model
     t = time.time()
-    from keras.callbacks import EarlyStopping, ModelCheckpoint
-#    save_epoch = ModelCheckpoint(data.save_epoch_path)
+    from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+    save_epoch = ModelCheckpoint(data.save_epoch_path)
+    tensor_board = TensorBoard(log_dir='./logs', histogram_freq=1, batch_size=batch_size_train, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
+
     my_model.fit_generator(
         data.batch_generator(
             nb_batch_train,
@@ -93,7 +84,7 @@ if __name__ == '__main__':
         steps_per_epoch = nb_batch_train,
         epochs=data.dicPar['max_epoch'],
 #        callbacks=[stop,save],
-#        callbacks=[save_epoch],
+        callbacks=[tensor_board,save_epoch],
         validation_data = data.batch_generator(
             nb_batch_dev,
             batch_size_dev, 
@@ -105,7 +96,6 @@ if __name__ == '__main__':
             labels=dev_labels, 
         ),
         validation_steps = nb_batch_dev
-#        validation_steps = 2
     )
     print('Fitting Elapse: ', time.time()-t)
 #    my_model.save_weights(data.save_final_path)
@@ -132,14 +122,18 @@ if __name__ == '__main__':
 
 #    print(max(label for label in classes))
 #    print(min(label for label in classes))
-#    print(sum(1 for label in classes if label > 0.5))
-#    print(sum(1 for label in classes if label > 0.6))
-#    print(sum(1 for label in classes if label > 0.7))
-#    print(sum(label for label in classes)/len(classes))
-#    with open(check_path(data.save_predict_path),'wb') as outfile:
-#        pickle.dump(classes, outfile)
+    print(sum(1 for label in classes if label > 0.5))
+    print(sum(1 for label in classes if label > 0.6))
+    print(sum(1 for label in classes if label > 0.7))
+    print(sum(label for label in classes)/len(classes))
 
     classes = classes.reshape(-1)
     prediction = classes.round().astype(int)
-    print(confusion_matrix(train_labels, prediction))
-    print(precision_recall_fscore_support(train_labels, prediction))
+    print(confusion_matrix(test_labels, prediction))
+    print(precision_recall_fscore_support(test_labels, prediction))
+    correctness = data.find_trues(test_labels, prediction)
+    accuracy = sum(correctness)/len(correctness)
+    print('accuracy =', accuracy)
+    with open(data.save_predict_path,'wb') as outfile:
+        pickle.dump(correctness, outfile)
+

@@ -19,9 +19,12 @@ class DataManager:
         self.test_path = self.path+self.dicFile['test_file']
         self.rusers_path = self.path+self.dicFile['rusers_path']
         self.uaids_path = self.path+self.dicFile['uaids_path']
-        self.save_epoch_path = self.check_path(self.path+self.dicFile['save_epoch_weight']+str(self.dicPar['max_epoch'])+'e.h5')
-        self.save_final_path = self.check_path(self.path+self.dicFile['save_final_weight']+str(self.dicPar['max_epoch'])+'e.h5')
-        self.save_predict_path = self.check_path(self.path+self.dicFile['save_prediction']+str(self.dicPar['max_epoch'])+'e.pkl')
+#        self.save_epoch_path = self.check_path(self.path+self.dicFile['save_epoch_weight']+'_{}e.h5'.format(self.dicPar['max_epoch']))
+#        self.save_final_path = self.check_path(self.path+self.dicFile['save_final_weight']+'_{}e.h5'.format(self.dicPar['max_epoch']))
+#        self.save_predict_path = self.check_path(self.path+self.dicFile['save_prediction']+'_{}e.pkl'.format(self.dicPar['max_epoch']))
+        self.save_epoch_path = self.check_path(self.path+self.dicFile['save_epoch_weight'])
+        self.save_final_path = self.check_path(self.path+self.dicFile['save_final_weight'])
+        self.save_predict_path = self.check_path(self.path+self.dicFile['save_prediction'])
         
         self.uDic = self.load_json(self.dicFile['path']+self.dicFile['user_dic'])
         self.uSize = len(self.uDic)
@@ -153,13 +156,13 @@ class DataManager:
         test_u_aids = None
 
         if self.dicPar['max_rusers'] > 0:
-            train_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format(self.dicFile['train_file'].rstrip('_data.h5')))
-            dev_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format(self.dicFile['dev_file'].rstrip('_data.h5')))
-            test_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format(self.dicFile['test_file'].rstrip('_data.h5')))
+            train_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format('train'))
+            dev_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format('dev'))
+            test_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format('test'))
         if self.dicPar['max_uarticles'] > 0:
-            train_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format(self.dicFile['train_file'].rstrip('_data.h5')))
-            dev_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format(self.dicFile['dev_file'].rstrip('_data.h5')))
-            test_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format(self.dicFile['test_file'].rstrip('_data.h5')))
+            train_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format('train'))
+            dev_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format('dev'))
+            test_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format('test'))
         print('load all r_users/u_aids elapse: ', time.time()-t_load)
         return train_r_users, train_u_aids, dev_r_users, dev_u_aids, test_r_users, test_u_aids
 
@@ -259,6 +262,14 @@ class DataManager:
                     yield (inputs, outputs)
                 else:
                     yield (inputs)
+
+    def find_trues(self, y_true, y_pred):
+#        result = np.zeros(len(y_true))
+#        for idx, pred in y_pred:
+#            if pred == y_true[idx]:
+#                result[idx]=1
+        result = abs(-1 + (y_true^y_pred))
+        return result
 
 #if __name__ == '__main__':
 #    data_manager = DataManager(sys.argv)
