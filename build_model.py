@@ -33,7 +33,7 @@ class BuildModel():
         self.flength3 = dicPar['flength3']
         self.conSize = dicPar['con_size']
 #        self.lSize = dicPar['l_size']
-#        self.lr = dicPar['lr']
+        self.lr = dicPar['lr']
         self.tSize = dicPar['topic_size']
         self.maxContentLen = dicPar['max_content']
         self.maxTitleLen = dicPar['max_title']
@@ -80,7 +80,7 @@ class BuildModel():
     def build(self):
         # Load embeddings
         self.build_embeddings()
-
+        
         # Current user representation (user vector)
         input_CUser = Input(shape=(self.maxCUser,), dtype='int32')
         CUV = Embedding(
@@ -91,7 +91,7 @@ class BuildModel():
         )(input_CUser)
         cuser_representation = Reshape((self.uDim,))(CUV)
         print('shape of user_representation', cuser_representation.shape)
-
+        
         # Current article representation (content vector)
         input_CContent = Input(shape=(self.maxContentLen,),dtype='int32')
         CCV = Embedding(
@@ -101,11 +101,14 @@ class BuildModel():
             weights = [self.word_emb],
             trainable = False
         )(input_CContent)
-        ccontent_pooling = MaxPooling1D(pool_size=(self.maxContentLen))(CCV) # shape=(-1,1,50)
-        ccontent_representation = Reshape((self.vDim,))(ccontent_pooling)
+#        ccontent_pooling = MaxPooling1D(pool_size=(self.maxContentLen))(CCV) # shape=(-1,1,50)
+#        ccontent_representation = Reshape((self.vDim,))(ccontent_pooling)
+        print(CCV.shape)
+        ccontent_representation = self.convolution(CCV)
         print('shape of current title representation', ccontent_representation.shape)
 
         # Recommended articles representation
+        
             # RUsers matrix
         input_RUsers = Input(shape=(self.maxRUsers,), dtype='int32')
         RUM = Embedding(
@@ -117,7 +120,7 @@ class BuildModel():
         rusers_matrix_pooling = MaxPooling1D(pool_size=(self.maxRUsers))(RUM)
         rusers_representation = Reshape((self.vDim, self.mini_uDim))(rusers_matrix_pooling)
         #print('shape of recommend users representation', rusers_representation.shape)
-
+        
             # RTopics matrix
         input_RTopics = Input(shape=(self.maxTopics,),dtype='int32')
         RTopicsM = Embedding(
@@ -139,17 +142,23 @@ class BuildModel():
             weights=[self.word_emb],
             trainable = False
         )(input_RTitle)
+        
             # user_matrix . content
         #print('RTitle shape',RTitle.shape)  #(?,40,50)
         dot_rtitle_rusers = Dot(axes=(2,1))([RTitle, rusers_representation])
+        
             # content . topic_matrix
         dot_rtitle_rtopics = Dot(axes=(2,1))([RTitle, rtopics_representation])
+    
             # (user_matrix . content) + (content . topic_matrix)
         r_title_user_topics = Concatenate()([dot_rtitle_rusers, dot_rtitle_rtopics])
         RTUT = Reshape((self.maxTitleLen,self.mini_uDim+self.mini_tDim))(r_title_user_topics)
-        RArticle_representation = self.convolution(RTUT)
+        
+        RT = Reshape((self.maxTitleLen, self.mini_tDim))(dot_rtitle_rtopics)
+        RArticle_representation = self.convolution(RT)
         print('shape of RArticle_representation', RArticle_representation.shape)
          
+        '''
         # User history representation
             # current user matrix
         CUM = Embedding(
@@ -160,7 +169,6 @@ class BuildModel():
         )(input_CUser)
         cuser_matrix = Reshape((self.vDim, self.mini_uDim))(CUM)
 
-        '''
             # history articles representation
         input_UArticles = Input((self.maxUArticles*self.maxTitleLen,))
         title_emb_layer = Embedding(
@@ -209,12 +217,13 @@ class BuildModel():
         model = Model(
 #            inputs=[input_CUser,input_CContent,input_RUsers,input_RTitle,input_RTopics,input_UArticles], 
             inputs=[input_CUser,input_CContent,input_RUsers,input_RTitle,input_RTopics], 
+#            inputs=[input_CContent,input_RTitle,input_RTopics], 
             outputs=predict
         )
     #    ag = Adagrad(lr)
     #    model.compile(ag, 'categorical_crossentropy',['accuracy'])
     #    model.compile(ag, 'binary_crossentropy',['accuracy'])
-        model.compile(optimizer='nadam', loss='binary_crossentropy', metrics=[self.f1, metrics.binary_accuracy])
+        model.compile(optimizer=Nadam(lr=self.lr), loss='binary_crossentropy', metrics=[self.f1, 'acc'])
         return model
 
     def f1(self, y_true, y_pred):
