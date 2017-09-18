@@ -33,7 +33,7 @@ class BuildModel():
         self.flength3 = dicPar['flength3']
         self.conSize = dicPar['con_size']
 #        self.lSize = dicPar['l_size']
-#        self.lr = dicPar['lr']
+        self.lr = dicPar['lr']
         self.tSize = dicPar['topic_size']
         self.maxContentLen = dicPar['max_content']
         self.maxTitleLen = dicPar['max_title']
@@ -50,7 +50,6 @@ class BuildModel():
 #        self.word_emb = word_embeddings
         self.topic_matrix_emb = np.random.uniform(min_bound, max_bound, size=(self.tSize, self.vDim*self.mini_tDim))
 
-#    def convolution(self, input_length, input_width, input_matrix):
     def convolution(self, input_matrix):
         min_bound = -self.rndBase
         max_bound = self.rndBase
@@ -101,8 +100,9 @@ class BuildModel():
             weights = [self.word_emb],
             trainable = False
         )(input_CContent)
-        ccontent_pooling = MaxPooling1D(pool_size=(self.maxContentLen))(CCV) # shape=(-1,1,50)
-        ccontent_representation = Reshape((self.vDim,))(ccontent_pooling)
+#        ccontent_pooling = MaxPooling1D(pool_size=(self.maxContentLen))(CCV) # shape=(-1,1,50)
+#        ccontent_representation = Reshape((self.vDim,))(ccontent_pooling)
+        ccontent_representation = convolution(CCV)
         print('shape of current title representation', ccontent_representation.shape)
 
         # Recommended articles representation
@@ -214,7 +214,7 @@ class BuildModel():
     #    ag = Adagrad(lr)
     #    model.compile(ag, 'categorical_crossentropy',['accuracy'])
     #    model.compile(ag, 'binary_crossentropy',['accuracy'])
-        model.compile(optimizer='nadam', loss='binary_crossentropy', metrics=[self.f1, metrics.binary_accuracy])
+        model.compile(optimizer=Nadam(lr=self.lr), loss='binary_crossentropy', metrics=[self.f1, 'acc'])
         return model
 
     def f1(self, y_true, y_pred):
