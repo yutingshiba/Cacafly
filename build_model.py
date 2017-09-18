@@ -80,6 +80,9 @@ class BuildModel():
     def build(self):
         # Load embeddings
         self.build_embeddings()
+
+        # Content representation
+        input_content = Input(shape=(self.maxContentLen*))
         
         # Current user representation (user vector)
         input_CUser = Input(shape=(self.maxCUser,), dtype='int32')
@@ -103,12 +106,10 @@ class BuildModel():
         )(input_CContent)
 #        ccontent_pooling = MaxPooling1D(pool_size=(self.maxContentLen))(CCV) # shape=(-1,1,50)
 #        ccontent_representation = Reshape((self.vDim,))(ccontent_pooling)
-        print(CCV.shape)
         ccontent_representation = self.convolution(CCV)
         print('shape of current title representation', ccontent_representation.shape)
 
         # Recommended articles representation
-        
             # RUsers matrix
         input_RUsers = Input(shape=(self.maxRUsers,), dtype='int32')
         RUM = Embedding(

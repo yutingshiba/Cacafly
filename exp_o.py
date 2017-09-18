@@ -40,7 +40,6 @@ if __name__ == '__main__':
     model = BuildModel(data.dicPar, data.vSize, data.word_emb, data.uSize)
     model.print_params()
     my_model = model.build()
-    sys.exit()
     print('Build model Elapse: ', time.time()-t)
 
     train_labels, train_r_aid, train_c_aid, train_c_user = data.load_h5py(data.train_path)
@@ -67,7 +66,7 @@ if __name__ == '__main__':
     # Fit model
     t = time.time()
     from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
-    save_epoch = ModelCheckpoint(data.save_epoch_path)
+#    save_epoch = ModelCheckpoint(data.save_epoch_path)
     tensor_board = TensorBoard(log_dir='./logs', histogram_freq=1, batch_size=batch_size_train, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
 
     my_model.fit_generator(
@@ -84,7 +83,8 @@ if __name__ == '__main__':
         steps_per_epoch = nb_batch_train,
         epochs=data.dicPar['max_epoch'],
 #        callbacks=[stop,save],
-        callbacks=[tensor_board,save_epoch],
+#        callbacks=[tensor_board,save_epoch],
+        callbacks=[tensor_board],
         validation_data = data.batch_generator(
             nb_batch_dev,
             batch_size_dev, 
