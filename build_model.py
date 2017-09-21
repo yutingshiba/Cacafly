@@ -50,7 +50,6 @@ class BuildModel():
 #        self.word_emb = word_embeddings
         self.topic_matrix_emb = np.random.uniform(min_bound, max_bound, size=(self.tSize, self.vDim*self.mini_tDim))
 
-#    def convolution(self, input_length, input_width, input_matrix):
     def convolution(self, input_matrix):
         min_bound = -self.rndBase
         max_bound = self.rndBase
@@ -91,7 +90,7 @@ class BuildModel():
         )(input_CUser)
         cuser_representation = Reshape((self.uDim,))(CUV)
         print('shape of user_representation', cuser_representation.shape)
-        
+       
         # Current article representation (content vector)
         input_CContent = Input(shape=(self.maxContentLen,),dtype='int32')
         CCV = Embedding(
@@ -101,37 +100,35 @@ class BuildModel():
             weights = [self.word_emb],
             trainable = False
         )(input_CContent)
-#        ccontent_pooling = MaxPooling1D(pool_size=(self.maxContentLen))(CCV) # shape=(-1,1,50)
-#        ccontent_representation = Reshape((self.vDim,))(ccontent_pooling)
         print(CCV.shape)
         ccontent_representation = self.convolution(CCV)
-        print('shape of current title representation', ccontent_representation.shape)
+        print('shape of current article representation', ccontent_representation.shape)
 
-        # Recommended articles representation
-        
+        # Recommended articles users representation
             # RUsers matrix
-        input_RUsers = Input(shape=(self.maxRUsers,), dtype='int32')
-        RUM = Embedding(
-            input_dim = self.uSize, 
-            output_dim = self.vDim*self.mini_uDim, 
-            input_length = self.maxRUsers, 
-            weights = [self.user_matrix_emb]
-        )(input_RUsers)
-        rusers_matrix_pooling = MaxPooling1D(pool_size=(self.maxRUsers))(RUM)
-        rusers_representation = Reshape((self.vDim, self.mini_uDim))(rusers_matrix_pooling)
-        #print('shape of recommend users representation', rusers_representation.shape)
-        
+#        input_RUsers = Input(shape=(self.maxRUsers,), dtype='int32')
+#        RUM = Embedding(
+#            input_dim = self.uSize, 
+#            output_dim = self.vDim*self.mini_uDim, 
+#            input_length = self.maxRUsers, 
+#            weights = [self.user_matrix_emb]
+#        )(input_RUsers)     # Shape of RUM: input_length * output_dim
+#        rusers_matrix_pooling = MaxPooling1D(pool_size=(self.maxRUsers))(RUM)
+#        rusers_representation = Reshape((self.vDim, self.mini_uDim))(rusers_matrix_pooling)
+#        print('shape of recommend users representation', rusers_representation.shape)
+
             # RTopics matrix
-        input_RTopics = Input(shape=(self.maxTopics,),dtype='int32')
-        RTopicsM = Embedding(
-            input_dim = self.tSize,
-            output_dim = self.vDim*self.mini_tDim,
-            input_length = self.maxTopics,
-            weights = [self.topic_matrix_emb]
-        )(input_RTopics)
-        rtopics_pooling = MaxPooling1D(pool_size=(self.maxTopics))(RTopicsM)
-        rtopics_representation = Reshape((self.vDim, self.mini_tDim))(rtopics_pooling)
-        #print('shape of recommend topics representation', rtopics_representation.shape)
+#        input_RTopics = Input(shape=(self.maxTopics,),dtype='int32')
+#        RTopicsM = Embedding(
+#            input_dim = self.tSize,
+#            output_dim = self.vDim*self.mini_tDim,
+#            input_length = self.maxTopics,
+#            weights = [self.topic_matrix_emb]
+#        )(input_RTopics)
+#        rtopics_pooling = MaxPooling1D(pool_size=(self.maxTopics))(RTopicsM)
+#        rtopics_representation = Reshape((self.vDim, self.mini_tDim))(rtopics_pooling)
+#        print('shape of recommend topics representation', rtopics_representation.shape)
+
 
             # content word embedding
         input_RTitle = Input(shape=(self.maxTitleLen,), dtype='int32')
@@ -143,20 +140,24 @@ class BuildModel():
             trainable = False
         )(input_RTitle)
         
-            # user_matrix . content
+        
         #print('RTitle shape',RTitle.shape)  #(?,40,50)
-        dot_rtitle_rusers = Dot(axes=(2,1))([RTitle, rusers_representation])
-        
+            # user_matrix . content
+#        dot_rtitle_rusers = Dot(axes=(2,1))([RTitle, rusers_representation])    # => (?, 40(max_title_len), 5(mini_user))
+#        print('dot rtitle ruser: ', dot_rtitle_rusers.shape)
             # content . topic_matrix
-        dot_rtitle_rtopics = Dot(axes=(2,1))([RTitle, rtopics_representation])
-    
+#        dot_rtitle_rtopics = Dot(axes=(2,1))([RTitle, rtopics_representation])  # => (?, 40(max_title_len), 5(mini_topic))
+#        print('dot rtitle rtopic: ', dot_rtitle_rtopics.shape)
             # (user_matrix . content) + (content . topic_matrix)
-        r_title_user_topics = Concatenate()([dot_rtitle_rusers, dot_rtitle_rtopics])
-        RTUT = Reshape((self.maxTitleLen,self.mini_uDim+self.mini_tDim))(r_title_user_topics)
-        
-        RT = Reshape((self.maxTitleLen, self.mini_tDim))(dot_rtitle_rtopics)
-        RArticle_representation = self.convolution(RT)
+#        r_title_user_topics = Concatenate()([dot_rtitle_rusers, dot_rtitle_rtopics])    # => (?, 40, 10)
+#        print('concatenated: ', r_title_user_topics.shape)
+#        RUCT = Reshape((self.maxTitleLen,self.mini_uDim+self.mini_tDim))(r_title_user_topics)
+#        RCT = Reshape((self.maxTitleLen, self.mini_tDim))(dot_rtitle_rtopics)
+#        RCU = Reshape((self.maxTitleLen, self.mini_uDim))(dot_rtitle_rusers)
+        RArticle_representation = self.convolution(RTitle)
+#        print('RCU shape: ', RCU.shape)
         print('shape of RArticle_representation', RArticle_representation.shape)
+        
          
         '''
         # User history representation
@@ -199,7 +200,7 @@ class BuildModel():
         '''
         # Concatenate all representations
         final = Concatenate()([
-            cuser_representation,
+#            cuser_representation,
             ccontent_representation,
             RArticle_representation,
 #            user_history_representation
@@ -216,8 +217,8 @@ class BuildModel():
         # Compile model
         model = Model(
 #            inputs=[input_CUser,input_CContent,input_RUsers,input_RTitle,input_RTopics,input_UArticles], 
-            inputs=[input_CUser,input_CContent,input_RUsers,input_RTitle,input_RTopics], 
-#            inputs=[input_CContent,input_RTitle,input_RTopics], 
+#            inputs=[input_CUser,input_CContent,input_RUsers,input_RTitle,input_RTopics], 
+            inputs=[input_CUser,input_CContent,input_RTitle], 
             outputs=predict
         )
     #    ag = Adagrad(lr)

@@ -30,7 +30,7 @@ def debug(data):
 
 if __name__ == '__main__':
     # tenserflow setting
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+#    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     gpu_options = tf.GPUOptions(allow_growth=True)
     sess = tf.InteractiveSession(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=gpu_options))
 
@@ -40,15 +40,12 @@ if __name__ == '__main__':
     model = BuildModel(data.dicPar, data.vSize, data.word_emb, data.uSize)
     model.print_params()
     my_model = model.build()
-    sys.exit()
+#    sys.exit()
     print('Build model Elapse: ', time.time()-t)
 
-    train_labels, train_r_aid, train_c_aid, train_c_user = data.load_h5py(data.train_path)
-    dev_labels, dev_r_aid, dev_c_aid, dev_c_user = data.load_h5py(data.dev_path)
-    test_labels, test_r_aid, test_c_aid, test_c_user = data.load_h5py(data.test_path)
-    
-    train_r_users, train_u_aids, dev_r_users, dev_u_aids, test_r_users, test_u_aids = data.load_all_pickle()
-
+    train_labels, train_r_aid, train_c_aid, train_c_user, train_r_users, train_u_aids = data.load_h5py(data.train_path)
+    dev_labels, dev_r_aid, dev_c_aid, dev_c_user, dev_r_users, dev_u_aids = data.load_h5py(data.dev_path)
+    test_labels, test_r_aid, test_c_aid, test_c_user, test_r_users, dev_u_aids = data.load_h5py(data.test_path)
 
     nb_train = len(train_labels)
     batch_size_train = data.dicPar['batch_size']
@@ -67,7 +64,7 @@ if __name__ == '__main__':
     # Fit model
     t = time.time()
     from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
-    save_epoch = ModelCheckpoint(data.save_epoch_path)
+#    save_epoch = ModelCheckpoint(data.save_epoch_path)
     tensor_board = TensorBoard(log_dir='./logs', histogram_freq=1, batch_size=batch_size_train, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
 
     my_model.fit_generator(
@@ -84,7 +81,7 @@ if __name__ == '__main__':
         steps_per_epoch = nb_batch_train,
         epochs=data.dicPar['max_epoch'],
 #        callbacks=[stop,save],
-        callbacks=[tensor_board,save_epoch],
+#        callbacks=[save_epoch],
         validation_data = data.batch_generator(
             nb_batch_dev,
             batch_size_dev, 
@@ -122,10 +119,10 @@ if __name__ == '__main__':
 
 #    print(max(label for label in classes))
 #    print(min(label for label in classes))
-    print(sum(1 for label in classes if label > 0.5))
-    print(sum(1 for label in classes if label > 0.6))
-    print(sum(1 for label in classes if label > 0.7))
-    print(sum(label for label in classes)/len(classes))
+#    print(sum(1 for label in classes if label > 0.5))
+#    print(sum(1 for label in classes if label > 0.6))
+#    print(sum(1 for label in classes if label > 0.7))
+#    print(sum(label for label in classes)/len(classes))
 
     classes = classes.reshape(-1)
     prediction = classes.round().astype(int)
@@ -134,6 +131,6 @@ if __name__ == '__main__':
     correctness = data.find_trues(test_labels, prediction)
     accuracy = sum(correctness)/len(correctness)
     print('accuracy =', accuracy)
-    with open(data.save_predict_path,'wb') as outfile:
-        pickle.dump(correctness, outfile)
+#    with open(data.save_predict_path,'wb') as outfile:
+#        pickle.dump(correctness, outfile)
 

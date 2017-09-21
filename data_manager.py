@@ -17,8 +17,6 @@ class DataManager:
         self.train_path = self.path+self.dicFile['train_file']
         self.dev_path = self.path+self.dicFile['dev_file']
         self.test_path = self.path+self.dicFile['test_file']
-        self.rusers_path = self.path+self.dicFile['rusers_path']
-        self.uaids_path = self.path+self.dicFile['uaids_path']
 #        self.save_epoch_path = self.check_path(self.path+self.dicFile['save_epoch_weight']+'_{}e.h5'.format(self.dicPar['max_epoch']))
 #        self.save_final_path = self.check_path(self.path+self.dicFile['save_final_weight']+'_{}e.h5'.format(self.dicPar['max_epoch']))
 #        self.save_predict_path = self.check_path(self.path+self.dicFile['save_prediction']+'_{}e.pkl'.format(self.dicPar['max_epoch']))
@@ -33,44 +31,39 @@ class DataManager:
         self.vDic, self.word_emb = self.load_embedding(self.dicFile['embedding_file'], self.dicPar['v_dim'])
         self.vSize = len(self.vDic)
         print('Load embedding elapse:', time.time()-t)
-        
+## ------------------------------------------------------------
         t = time.time()
-        titles = self.load_tFile(self.dicFile['aid_title_dic'])
+        titles = self.load_file(self.dicFile['title'])
         self.title_padded = self.pad_data(titles, self.dicPar['max_title'], self.vDic)
+#        print(self.title_padded[-1])
         print('Load title elapse:', time.time()-t)
 
         t = time.time()
-        topics = self.load_tFile(self.dicFile['aid_topic_dic'])
+        topics = self.load_file(self.dicFile['topic'])
         self.topic_padded = self.pad_data(topics, self.dicPar['max_topic'])
+#        print(self.topic_padded[-1])
         print('Load topic elapse:', time.time()-t)
 
         t = time.time()
-        contents = self.load_contentFile(self.dicFile['content_file'], self.dicFile['input_type'])
+        contents = self.load_file(self.dicFile['content'])
         self.content_padded = self.pad_data(contents, self.dicPar['max_content'], self.vDic)
+#        print(self.content_padded[-1])
+#        sys.exit()
         print('Load content elapse:', time.time()-t)
-    
+## -----------------------------------------------------------------------------------
     def check_path(self, file_path):
         if os.path.exists(file_path):
             print('Warning!!!', file_path, 'already exist!')
             sys.exit()
         return file_path
 
-    def load_contentFile(self, file_path, input_type):
-        id_content_dic = json.load(open(file_path))
-        if input_type == 'word':
-            contents = [id_content_dic[str(aid)] for aid in range(1, len(id_content_dic)+1)]
-        elif input_type == 'character':
-            contents = []
-            for aid in range(1, len(id_content_dic)+1):
-                c = id_content_dic[str(aid)].strip('\n').replace(' ','')
-                contents.append(' '.join(c))
-        return contents
+    def load_file(self, file_path):
+        lines = []
+        with open(file_path) as fin:
+            for line in fin:
+                lines.append(line)
+        return lines
     
-    def load_tFile(self, file_path):
-        id_title_dic = json.load(open(file_path))
-        titles = [id_title_dic[str(aid)] for aid in range(1, len(id_title_dic)+1)]
-        return titles
-        
     def pad_data(self, data, max_length, dic=None):
         data_padded = np.zeros((len(data)+1, max_length))
         for idx, line in enumerate(data, 1):
@@ -132,12 +125,32 @@ class DataManager:
     def load_h5py(self, file_path):
         t_load = time.time()
         with h5py.File(file_path, 'r') as infile:
-             labels = infile['labels'][:]
-             r_aid = infile['r_aid'][:]
-             c_aid = infile['c_aid'][:]
-             c_user = infile['c_user'][:]
+            labels = infile['labels'][:]
+            r_aid = infile['r_aid'][:]
+            c_aid = infile['c_aid'][:]
+            c_user = infile['c_user'][:]
+#            print(labels[-3])
+#            print(r_aid[-3])
+#            print(c_aid[-3])
+#            print(c_user[-3])
+            
+            r_users = []
+            r_users_raw = infile['r_users'][:]
+            for ru_string in r_users_raw:
+                r_user = ru_string.decode('utf-8').strip('%').split('%')
+                r_users.append(r_user)
+#            print(r_users[-3])
+            
+            u_aids = []
+            u_aids_raw = infile['u_aids'][:]
+            for ua_string in u_aids_raw:
+                u_aid = ua_string.decode('utf-8').strip('%').split('%')
+                u_aids.append(u_aid)
+#            print(u_aids[-3])
+ #           sys.exit()
+
         print('load', file_path,'elapse: ', time.time()-t_load)
-        return labels, r_aid, c_aid, c_user
+        return labels, r_aid, c_aid, c_user, r_users, u_aids
 
     def load_pickle(self, file_path):
         t_load = time.time()
@@ -145,26 +158,6 @@ class DataManager:
             data = pickle.load(infile)
         print('load', file_path, 'elapse: ', time.time()-t_load)
         return data
-
-    def load_all_pickle(self):
-        t_load = time.time()
-        train_r_users = None
-        dev_r_users = None
-        test_r_users = None
-        train_u_aids = None
-        dev_u_aids = None
-        test_u_aids = None
-
-        if self.dicPar['max_rusers'] > 0:
-            train_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format('train'))
-            dev_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format('dev'))
-            test_r_users = self.load_pickle(self.rusers_path+'_{}.pkl'.format('test'))
-        if self.dicPar['max_uarticles'] > 0:
-            train_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format('train'))
-            dev_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format('dev'))
-            test_u_aids = self.load_pickle(self.uaids_path+'_{}.pkl'.format('test'))
-        print('load all r_users/u_aids elapse: ', time.time()-t_load)
-        return train_r_users, train_u_aids, dev_r_users, dev_u_aids, test_r_users, test_u_aids
 
     def load_json(self, file_path):
         t_load = time.time()
@@ -209,8 +202,8 @@ class DataManager:
         for aid in r_aid:
             R_title.append(self.title_padded[aid])
             R_topics.append(self.topic_padded[aid])
-        for users in r_users:
-            R_users.append(self.pad_users(users, self.dicPar['max_rusers'], self.uDic))
+#        for users in r_users:
+#            R_users.append(self.pad_users(users, self.dicPar['max_rusers'], self.uDic))
         for aid in c_aid:
             C_content.append(self.content_padded[aid])
         for user in c_user:
@@ -232,11 +225,15 @@ class DataManager:
             # shuffle data
             from sklearn.utils import shuffle
             if maxUArticles > 0:
-                labels, C_user, C_content, R_users, R_title, R_topics, U_titles \
-                    = shuffle(labels, C_user, C_content, R_users, R_title, R_topics, U_titles)
+#                labels, C_user, C_content, R_users, R_title, R_topics, U_titles \
+#                    = shuffle(labels, C_user, C_content, R_users, R_title, R_topics, U_titles)
+                labels, C_user, C_content, R_title, R_topics, U_titles \
+                    = shuffle(labels, C_user, C_content, R_title, R_topics, U_titles)
             else:
-                labels, C_user, C_content, R_users, R_title, R_topics \
-                    = shuffle(labels, C_user, C_content, R_users, R_title, R_topics)
+#                labels, C_user, C_content, R_users, R_title, R_topics \
+#                    = shuffle(labels, C_user, C_content, R_users, R_title, R_topics)
+                labels, C_user, C_content, R_title, R_topics \
+                    = shuffle(labels, C_user, C_content, R_title, R_topics)
 
         while 1:
             for i in range(nb_batch):
@@ -244,18 +241,18 @@ class DataManager:
                     inputs=[
                         np.array(C_user[i*batch_size:(i+1)*batch_size]),
                         np.array(C_content[i*batch_size:(i+1)*batch_size]), 
-                        np.array(R_users[i*batch_size:(i+1)*batch_size]), 
+#                        np.array(R_users[i*batch_size:(i+1)*batch_size]), 
                         np.array(R_title[i*batch_size:(i+1)*batch_size]), 
-                        np.array(R_topics[i*batch_size:(i+1)*batch_size]),
-                        np.array(U_titles[i*batch_size:(i+1)*batch_size])
+#                        np.array(R_topics[i*batch_size:(i+1)*batch_size]),
+#                        np.array(U_titles[i*batch_size:(i+1)*batch_size])
                     ]
                 else:
                     inputs=[
                         np.array(C_user[i*batch_size:(i+1)*batch_size]),
                         np.array(C_content[i*batch_size:(i+1)*batch_size]), 
-                        np.array(R_users[i*batch_size:(i+1)*batch_size]), 
+#                        np.array(R_users[i*batch_size:(i+1)*batch_size]), 
                         np.array(R_title[i*batch_size:(i+1)*batch_size]), 
-                        np.array(R_topics[i*batch_size:(i+1)*batch_size]),
+#                        np.array(R_topics[i*batch_size:(i+1)*batch_size]),
                     ]
                 if labels is not None:
                     outputs=labels[i*batch_size:(i+1)*batch_size]
