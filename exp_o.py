@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     train_labels, train_r_aid, train_c_aid, train_c_user, train_r_users, train_u_aids = data.load_h5py(data.train_path)
     dev_labels, dev_r_aid, dev_c_aid, dev_c_user, dev_r_users, dev_u_aids = data.load_h5py(data.dev_path)
-    test_labels, test_r_aid, test_c_aid, test_c_user, test_r_users, dev_u_aids = data.load_h5py(data.test_path)
+    test_labels, test_r_aid, test_c_aid, test_c_user, test_r_users, test_u_aids = data.load_h5py(data.test_path)
 
     nb_train = len(train_labels)
     batch_size_train = data.dicPar['batch_size']
