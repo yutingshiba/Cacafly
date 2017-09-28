@@ -32,17 +32,17 @@ class DataManager:
         self.vSize = len(self.vDic)
         print('Load embedding elapse:', time.time()-t)
 ## ------------------------------------------------------------
-        t = time.time()
-        titles = self.load_file(self.dicFile['title'])
-        self.title_padded = self.pad_data(titles, self.dicPar['max_title'], self.vDic)
+#        t = time.time()
+#        titles = self.load_file(self.dicFile['title'])
+#        self.title_padded = self.pad_data(titles, self.dicPar['max_title'], self.vDic)
 #        print(self.title_padded[-1])
-        print('Load title elapse:', time.time()-t)
+#        print('Load title elapse:', time.time()-t)
 
-        t = time.time()
-        topics = self.load_file(self.dicFile['topic'])
-        self.topic_padded = self.pad_data(topics, self.dicPar['max_topic'])
+#        t = time.time()
+#        topics = self.load_file(self.dicFile['topic'])
+#        self.topic_padded = self.pad_data(topics, self.dicPar['max_topic'])
 #        print(self.topic_padded[-1])
-        print('Load topic elapse:', time.time()-t)
+#        print('Load topic elapse:', time.time()-t)
 
         t = time.time()
         contents = self.load_file(self.dicFile['content'])
@@ -195,15 +195,15 @@ class DataManager:
         C_user = []
         C_content = []
         R_users = []
-        R_title = []
-        R_topics = []
+        R_content = []
+#        R_topics = []
         U_titles = []
 
         for aid in r_aid:
-            R_title.append(self.title_padded[aid])
-            R_topics.append(self.topic_padded[aid])
-#        for users in r_users:
-#            R_users.append(self.pad_users(users, self.dicPar['max_rusers'], self.uDic))
+            R_content.append(self.content_padded[aid])
+#            R_topics.append(self.topic_padded[aid])
+        for users in r_users:
+            R_users.append(self.pad_users(users, self.dicPar['max_rusers'], self.uDic))
         for aid in c_aid:
             C_content.append(self.content_padded[aid])
         for user in c_user:
@@ -227,13 +227,13 @@ class DataManager:
             if maxUArticles > 0:
 #                labels, C_user, C_content, R_users, R_title, R_topics, U_titles \
 #                    = shuffle(labels, C_user, C_content, R_users, R_title, R_topics, U_titles)
-                labels, C_user, C_content, R_title, R_topics, U_titles \
-                    = shuffle(labels, C_user, C_content, R_title, R_topics, U_titles)
+                labels, C_user, C_content, R_content, U_titles \
+                    = shuffle(labels, C_user, C_content, R_content, U_titles)
             else:
 #                labels, C_user, C_content, R_users, R_title, R_topics \
 #                    = shuffle(labels, C_user, C_content, R_users, R_title, R_topics)
-                labels, C_user, C_content, R_title, R_topics \
-                    = shuffle(labels, C_user, C_content, R_title, R_topics)
+                labels, C_user, C_content, R_content \
+                    = shuffle(labels, C_user, C_content, R_content)
 
         while 1:
             for i in range(nb_batch):
@@ -241,8 +241,8 @@ class DataManager:
                     inputs=[
                         np.array(C_user[i*batch_size:(i+1)*batch_size]),
                         np.array(C_content[i*batch_size:(i+1)*batch_size]), 
-#                        np.array(R_users[i*batch_size:(i+1)*batch_size]), 
-                        np.array(R_title[i*batch_size:(i+1)*batch_size]), 
+                        np.array(R_users[i*batch_size:(i+1)*batch_size]), 
+                        np.array(R_content[i*batch_size:(i+1)*batch_size]), 
 #                        np.array(R_topics[i*batch_size:(i+1)*batch_size]),
 #                        np.array(U_titles[i*batch_size:(i+1)*batch_size])
                     ]
@@ -250,8 +250,8 @@ class DataManager:
                     inputs=[
                         np.array(C_user[i*batch_size:(i+1)*batch_size]),
                         np.array(C_content[i*batch_size:(i+1)*batch_size]), 
-#                        np.array(R_users[i*batch_size:(i+1)*batch_size]), 
-                        np.array(R_title[i*batch_size:(i+1)*batch_size]), 
+                        np.array(R_users[i*batch_size:(i+1)*batch_size]), 
+                        np.array(R_content[i*batch_size:(i+1)*batch_size]), 
 #                        np.array(R_topics[i*batch_size:(i+1)*batch_size]),
                     ]
                 if labels is not None:

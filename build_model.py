@@ -34,10 +34,8 @@ class BuildModel():
         self.conSize = dicPar['con_size']
 #        self.lSize = dicPar['l_size']
         self.lr = dicPar['lr']
-        self.tSize = dicPar['topic_size']
+#        self.tSize = dicPar['topic_size']
         self.maxContentLen = dicPar['max_content']
-        self.maxTitleLen = dicPar['max_title']
-        self.maxTopics = dicPar['max_topic']
         self.maxCUser = dicPar['max_cuser']
         self.maxRUsers = dicPar['max_rusers']
         self.maxUArticles = dicPar['max_uarticles']
@@ -48,7 +46,7 @@ class BuildModel():
         self.user_vector_emb = np.random.uniform(min_bound, max_bound, size=(self.uSize, self.uDim))
         self.user_matrix_emb = np.random.uniform(min_bound, max_bound, size=(self.uSize, self.vDim*self.mini_uDim))
 #        self.word_emb = word_embeddings
-        self.topic_matrix_emb = np.random.uniform(min_bound, max_bound, size=(self.tSize, self.vDim*self.mini_tDim))
+#        self.topic_matrix_emb = np.random.uniform(min_bound, max_bound, size=(self.tSize, self.vDim*self.mini_tDim))
 
     def convolution(self, input_matrix):
         min_bound = -self.rndBase
@@ -106,16 +104,16 @@ class BuildModel():
 
         # Recommended articles users representation
             # RUsers matrix
-#        input_RUsers = Input(shape=(self.maxRUsers,), dtype='int32')
-#        RUM = Embedding(
-#            input_dim = self.uSize, 
-#            output_dim = self.vDim*self.mini_uDim, 
-#            input_length = self.maxRUsers, 
-#            weights = [self.user_matrix_emb]
-#        )(input_RUsers)     # Shape of RUM: input_length * output_dim
-#        rusers_matrix_pooling = MaxPooling1D(pool_size=(self.maxRUsers))(RUM)
-#        rusers_representation = Reshape((self.vDim, self.mini_uDim))(rusers_matrix_pooling)
-#        print('shape of recommend users representation', rusers_representation.shape)
+        input_RUsers = Input(shape=(self.maxRUsers,), dtype='int32')
+        RUM = Embedding(
+            input_dim = self.uSize, 
+            output_dim = self.vDim*self.mini_uDim, 
+            input_length = self.maxRUsers, 
+            weights = [self.user_matrix_emb]
+        )(input_RUsers)     # Shape of RUM: input_length * output_dim
+        rusers_matrix_pooling = MaxPooling1D(pool_size=(self.maxRUsers))(RUM)
+        rusers_representation = Reshape((self.vDim, self.mini_uDim))(rusers_matrix_pooling)
+        print('shape of recommend users representation', rusers_representation.shape)
 
             # RTopics matrix
 #        input_RTopics = Input(shape=(self.maxTopics,),dtype='int32')
@@ -131,30 +129,30 @@ class BuildModel():
 
 
             # content word embedding
-        input_RTitle = Input(shape=(self.maxTitleLen,), dtype='int32')
-        RTitle = Embedding(
+        input_RContent = Input(shape=(self.maxContentLen,), dtype='int32')
+        RContent = Embedding(
             input_dim = self.vSize,
             output_dim = self.vDim,
-            input_length = self.maxTitleLen,
+            input_length = self.maxContentLen,
             weights=[self.word_emb],
             trainable = False
-        )(input_RTitle)
+        )(input_RContent)
         
         
         #print('RTitle shape',RTitle.shape)  #(?,40,50)
             # user_matrix . content
-#        dot_rtitle_rusers = Dot(axes=(2,1))([RTitle, rusers_representation])    # => (?, 40(max_title_len), 5(mini_user))
-#        print('dot rtitle ruser: ', dot_rtitle_rusers.shape)
+#        dot_rContent_rusers = Dot(axes=(2,1))([RContent, rusers_representation])    # => (?, 40(max_title_len), 5(mini_user))
+#        print('dot rtitle ruser: ', dot_rContent_rusers.shape)
             # content . topic_matrix
 #        dot_rtitle_rtopics = Dot(axes=(2,1))([RTitle, rtopics_representation])  # => (?, 40(max_title_len), 5(mini_topic))
 #        print('dot rtitle rtopic: ', dot_rtitle_rtopics.shape)
             # (user_matrix . content) + (content . topic_matrix)
 #        r_title_user_topics = Concatenate()([dot_rtitle_rusers, dot_rtitle_rtopics])    # => (?, 40, 10)
 #        print('concatenated: ', r_title_user_topics.shape)
-#        RUCT = Reshape((self.maxTitleLen,self.mini_uDim+self.mini_tDim))(r_title_user_topics)
-#        RCT = Reshape((self.maxTitleLen, self.mini_tDim))(dot_rtitle_rtopics)
-#        RCU = Reshape((self.maxTitleLen, self.mini_uDim))(dot_rtitle_rusers)
-        RArticle_representation = self.convolution(RTitle)
+#        RUTT = Reshape((self.maxTitleLen,self.mini_uDim+self.mini_tDim))(r_title_user_topics)
+#        RTT = Reshape((self.maxTitleLen, self.mini_tDim))(dot_rtitle_rtopics)
+#        RUC = Reshape((self.maxContentLen, self.mini_uDim))(dot_rContent_rusers)
+        RArticle_representation = self.convolution(RContent)
 #        print('RCU shape: ', RCU.shape)
         print('shape of RArticle_representation', RArticle_representation.shape)
         
@@ -200,7 +198,7 @@ class BuildModel():
         '''
         # Concatenate all representations
         final = Concatenate()([
-#            cuser_representation,
+            cuser_representation,
             ccontent_representation,
             RArticle_representation,
 #            user_history_representation
@@ -216,9 +214,8 @@ class BuildModel():
 
         # Compile model
         model = Model(
-#            inputs=[input_CUser,input_CContent,input_RUsers,input_RTitle,input_RTopics,input_UArticles], 
-#            inputs=[input_CUser,input_CContent,input_RUsers,input_RTitle,input_RTopics], 
-            inputs=[input_CUser,input_CContent,input_RTitle], 
+#            inputs=[input_CUser,input_CContent,input_RUsers,input_RContent,input_RTopics,input_UArticles], 
+            inputs=[input_CUser,input_CContent,input_RUsers,input_RContent], 
             outputs=predict
         )
     #    ag = Adagrad(lr)
@@ -243,9 +240,9 @@ class BuildModel():
         return f1_score
 
     def print_params(self): 
-        print('uSize, vSize, tSize')
-        print(self.uSize, self.vSize, self.tSize)
-        print('maxContentLen, maxTitleLen, maxTopics')
-        print(self.maxContentLen, self.maxTitleLen, self.maxTopics)
+        print('uSize, vSize')
+        print(self.uSize, self.vSize)
+        print('maxContentLen')
+        print(self.maxContentLen)
         print('maxCUser, maxRUsers, maxUArticles')
         print(self.maxCUser, self.maxRUsers, self.maxUArticles)

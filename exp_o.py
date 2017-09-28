@@ -64,8 +64,9 @@ if __name__ == '__main__':
     # Fit model
     t = time.time()
     from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+    stop = EarlyStopping(monitor='val_acc', min_delta=0, patience=10, mode='max')
 #    save_epoch = ModelCheckpoint(data.save_epoch_path)
-    tensor_board = TensorBoard(log_dir='./logs', histogram_freq=1, batch_size=batch_size_train, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
+#    tensor_board = TensorBoard(log_dir='./logs', histogram_freq=1, batch_size=batch_size_train, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
 
     my_model.fit_generator(
         data.batch_generator(
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         ),
         steps_per_epoch = nb_batch_train,
         epochs=data.dicPar['max_epoch'],
-#        callbacks=[stop,save],
+        callbacks=[stop],
 #        callbacks=[save_epoch],
         validation_data = data.batch_generator(
             nb_batch_dev,
@@ -92,7 +93,8 @@ if __name__ == '__main__':
             u_aids=dev_u_aids,
             labels=dev_labels, 
         ),
-        validation_steps = nb_batch_dev
+        validation_steps = nb_batch_dev,
+        class_weight={0:1,1:8}
     )
     print('Fitting Elapse: ', time.time()-t)
 #    my_model.save_weights(data.save_final_path)
@@ -131,6 +133,6 @@ if __name__ == '__main__':
     correctness = data.find_trues(test_labels, prediction)
     accuracy = sum(correctness)/len(correctness)
     print('accuracy =', accuracy)
-#    with open(data.save_predict_path,'wb') as outfile:
-#        pickle.dump(correctness, outfile)
+    with open(data.save_predict_path,'wb') as outfile:
+        pickle.dump(correctness, outfile)
 
